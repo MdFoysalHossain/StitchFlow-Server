@@ -33,6 +33,9 @@ async function run() {
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
 
+
+
+        // CREATE USER ACCOUNT AND HANDLE LOGIN CREATION
         app.post("/createUser", async (req, res) => {
             const userDetails = req.body
             const iso = new Date().toISOString();
@@ -55,6 +58,15 @@ async function run() {
             }
             console.log(userDetails)
             const result = await dbUsers.insertOne(userIngo)
+            res.send(result)
+        })
+
+
+
+        app.get("/FindUser", async(req, res) => {
+            const email = req.query.email
+            const query = {email: email}
+            const result = await dbUsers.findOne(query)
             res.send(result)
         })
 
