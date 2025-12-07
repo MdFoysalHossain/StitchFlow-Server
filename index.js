@@ -27,6 +27,7 @@ async function run() {
 
     const myDB = client.db("StitchFlow");
     const dbUsers = myDB.collection("Users");
+    const dbAllPost = myDB.collection("AllPosts");
 
     try {
         await client.connect();
@@ -40,11 +41,11 @@ async function run() {
             const userDetails = req.body
             const iso = new Date().toISOString();
 
-            const query = {email: userDetails.email}
+            const query = { email: userDetails.email }
             const findEmail = await dbUsers.findOne(query)
 
-            if(findEmail){
-                return res.send({message: "User Already Has an Account"})
+            if (findEmail) {
+                return res.send({ message: "User Already Has an Account" })
             }
 
             const userIngo = {
@@ -62,13 +63,46 @@ async function run() {
         })
 
 
-
-        app.get("/FindUser", async(req, res) => {
+        // FIND USER BASED ON EMAIL Query
+        app.get("/FindUser", async (req, res) => {
             const email = req.query.email
-            const query = {email: email}
+            const query = { email: email }
             const result = await dbUsers.findOne(query)
             res.send(result)
         })
+
+
+        // CREATE POST SYSTEM ONLY Managers can upload 
+        app.post("/CreatePost", async (req, res) => {
+            const postData = req.body;
+            const postInfo = {
+                category: postData.category,
+                perPrice: postData.perPrice,
+                totalQuanity: postData.totalQuanity,
+                availableQuanity: postData.availableQuanity,
+                minimumOrder: postData.minimumOrder,
+                cod: postData.cod,
+                onlinePay: postData.onlinePay,
+                showHome: postData.showHome,
+                title: postData.title,
+                description: postData.description,
+                images: postData.images,
+                status: postData.status,
+                createdBy: postData.createdBy,
+                createdAt: postData.createdAt
+            }
+            const post = await dbAllPost.insertOne(postInfo)
+            res.send(post)
+        })
+
+
+        // Load All Products
+        app.get("/AllProducts", async(req, res) => {
+            const allData = await dbAllPost.find().toArray()
+            res.send(allData)
+        })
+
+
 
 
     } finally {
