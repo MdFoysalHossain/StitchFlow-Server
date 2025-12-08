@@ -29,6 +29,7 @@ async function run() {
     const myDB = client.db("StitchFlow");
     const dbUsers = myDB.collection("Users");
     const dbAllPost = myDB.collection("AllPosts");
+    const dbOrders = myDB.collection("ProductOrders");
 
     try {
         await client.connect();
@@ -151,6 +152,29 @@ async function run() {
             console.log(session);
             res.send({ url: session.url });
         });
+
+
+        // ON SUCCESSFULL ONLINE PAYMENT 
+        app.post("/payment-success", async (req, res) => {
+            const sessionId = req.query.session_id;
+
+            const session = await stripe.checkout.sessions.retrieve(sessionId)
+
+            const productDetails = JSON.parse(session.metadata.paymentInfo);
+            const query = { checkPrevOrder: productDetails.checkPrevOrder }
+
+            if (session.payment_status === "paid") {
+                const check = await dbOrders.findOne(query)
+                if (!check) {
+                    const result = await dbOrders.insertOne(productDetails)
+                    // console.log(result)
+                    res.send(productDetails)
+                }else{
+                    console.log({message: "Already Exist"})
+                    res.send({message: "Already Exist"})
+                }
+            }
+        })
 
 
 
