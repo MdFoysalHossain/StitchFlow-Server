@@ -8,8 +8,9 @@ app.use(cors())
 app.use(express.json())
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_Admin}:${process.env.DB_Password}@codeearnestcluster.vnisplg.mongodb.net/?appName=CodeEarnestCluster`;
+const stripe = require('stripe')(process.env.STRIPE_Key);
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -97,10 +98,59 @@ async function run() {
 
 
         // Load All Products
-        app.get("/AllProducts", async(req, res) => {
+        app.get("/AllProducts", async (req, res) => {
             const allData = await dbAllPost.find().toArray()
             res.send(allData)
         })
+
+        app.get("/SingleProduct/:id", async (req, res) => {
+            const params = req.params.id;
+            const query = { _id: new ObjectId(params) }
+            const getData = await dbAllPost.findOne(query)
+            console.log(getData)
+            res.send(getData)
+        })
+
+
+
+
+
+
+
+        // PAYMENT API Checkout
+        app.post("/create-checkout-session", async (req, res) => {
+            const paymentInfo = req.body;
+            const { total, title } = paymentInfo;
+
+            const priceCent = total * 100;
+            console.log(priceCent, title);
+
+            const session = await stripe.checkout.sessions.create({
+                line_items: [
+                    {
+                        price_data: {
+                            currency: "USD",
+                            unit_amount: priceCent,
+                            product_data: {
+                                name: title,
+                            }
+                        },
+                        quantity: 1,
+                    },
+                ],
+
+                mode: 'payment',
+                metadata: {
+                    paymentInfo: JSON.stringify(paymentInfo)
+                },
+
+                success_url: `${process.env.SITE_Domain}/Payment/Payment-successful?session_id={CHECKOUT_SESSION_ID}`,
+                cancel_url: `${process.env.SITE_Domain}/Payment/Payment-canceled`,
+            });
+
+            console.log(session);
+            res.send({ url: session.url });
+        });
 
 
 
