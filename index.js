@@ -98,6 +98,34 @@ async function run() {
         })
 
 
+        // UPDATE POST
+        app.patch("/UpdatePost", async (req, res) => {
+            const postData = req.body;
+            const query = { _id: new ObjectId(postData.id) };
+
+            const postInfo = {
+                category: postData.category,
+                perPrice: postData.perPrice,
+                totalQuanity: postData.totalQuanity,
+                availableQuanity: postData.availableQuanity,
+                minimumOrder: postData.minimumOrder,
+                cod: postData.cod,
+                onlinePay: postData.onlinePay,
+                showHome: postData.showHome,
+                title: postData.title,
+                description: postData.description,
+                images: postData.images,
+                status: postData.status,
+                createdBy: postData.createdBy,
+                createdAt: postData.createdAt
+            };
+
+            const post = await dbAllPost.updateOne(query, { $set: postInfo });
+            console.log("Updated", post)
+            res.send(post);
+        })
+
+
         // Load All Products
         app.get("/AllProducts", async (req, res) => {
             const allData = await dbAllPost.find().toArray()
@@ -169,37 +197,37 @@ async function run() {
                     const result = await dbOrders.insertOne(productDetails)
                     // console.log(result)
                     res.send(productDetails)
-                }else{
-                    console.log({message: "Already Exist"})
-                    res.send({message: "Already Exist"})
+                } else {
+                    console.log({ message: "Already Exist" })
+                    res.send({ message: "Already Exist" })
                 }
             }
         })
 
         // MANAGER DASHBOARD STATS:
-        app.get("/GetProductsStats", async(req, res) => {
+        app.get("/GetProductsStats", async (req, res) => {
             const email = req.query.email
             const limit = req.query.limit
             console.log(email, limit)
-            const query = {createdBy: email}
+            const query = { createdBy: email }
             const AllProducts = await dbAllPost.find(query).sort({ createdAt: -1 }).limit(Number(limit)).toArray()
             res.send(AllProducts)
         })
 
-        app.get("/GetPendingStats", async(req, res) => {
+        app.get("/GetPendingStats", async (req, res) => {
             const email = req.query.email
             const limit = req.query.limit
             console.log(email, limit)
-            const query = {sellerEmail: email, status: "pending"}
+            const query = { sellerEmail: email, status: "pending" }
             const AllProducts = await dbOrders.find(query).limit(Number(limit)).toArray()
             res.send(AllProducts)
         })
 
-        app.get("/GetApprovedStats", async(req, res) => {
+        app.get("/GetApprovedStats", async (req, res) => {
             const email = req.query.email
             const limit = req.query.limit
             console.log(email, limit)
-            const query = {sellerEmail: email, status: "confirmed"}
+            const query = { sellerEmail: email, status: "confirmed" }
             const AllProducts = await dbOrders.find(query).limit(Number(limit)).toArray()
             res.send(AllProducts)
         })
