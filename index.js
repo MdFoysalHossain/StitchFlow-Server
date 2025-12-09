@@ -176,8 +176,33 @@ async function run() {
             }
         })
 
+        // MANAGER DASHBOARD STATS:
+        app.get("/GetProductsStats", async(req, res) => {
+            const email = req.query.email
+            const limit = req.query.limit
+            console.log(email, limit)
+            const query = {createdBy: email}
+            const AllProducts = await dbAllPost.find(query).sort({ createdAt: -1 }).limit(Number(limit)).toArray()
+            res.send(AllProducts)
+        })
 
+        app.get("/GetPendingStats", async(req, res) => {
+            const email = req.query.email
+            const limit = req.query.limit
+            console.log(email, limit)
+            const query = {sellerEmail: email, status: "pending"}
+            const AllProducts = await dbOrders.find(query).limit(Number(limit)).toArray()
+            res.send(AllProducts)
+        })
 
+        app.get("/GetApprovedStats", async(req, res) => {
+            const email = req.query.email
+            const limit = req.query.limit
+            console.log(email, limit)
+            const query = {sellerEmail: email, status: "confirmed"}
+            const AllProducts = await dbOrders.find(query).limit(Number(limit)).toArray()
+            res.send(AllProducts)
+        })
 
     } finally {
         // Ensures that the client will close when you finish/error
