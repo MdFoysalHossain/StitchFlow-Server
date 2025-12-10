@@ -97,6 +97,13 @@ async function run() {
             res.send(post)
         })
 
+        app.delete("/DeletePost/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const post = await dbAllPost.deleteOne(query)
+            res.send(post)
+        })
+
 
         // UPDATE POST
         app.patch("/UpdatePost", async (req, res) => {
@@ -184,24 +191,49 @@ async function run() {
 
         // ON SUCCESSFULL ONLINE PAYMENT 
         app.post("/payment-success", async (req, res) => {
+            // const sessionId = req.query.session_id;
+
+            // const session = await stripe.checkout.sessions.retrieve(sessionId)
+
+            // const productDetails = JSON.parse(session.metadata.paymentInfo);
+            // const query = { checkPrevOrder: productDetails.checkPrevOrder }
+
+            // if (session.payment_status === "paid") {
+            //     const check = await dbOrders.findOne(query)
+            //     if (!check) {
+            //         const result = await dbOrders.insertOne(productDetails)
+            //         // console.log(result)
+            //         res.send(productDetails)
+            //     } else {
+            //         console.log({ message: "Already Exist" })
+            //         res.send({ message: "Already Exist" })
+            //     }
+            // }
+
             const sessionId = req.query.session_id;
-
-            const session = await stripe.checkout.sessions.retrieve(sessionId)
-
+            const session = await stripe.checkout.sessions.retrieve(sessionId);
             const productDetails = JSON.parse(session.metadata.paymentInfo);
-            const query = { checkPrevOrder: productDetails.checkPrevOrder }
+            const query = { checkPrevOrder: productDetails.checkPrevOrder };
 
             if (session.payment_status === "paid") {
-                const check = await dbOrders.findOne(query)
+                const check = await dbOrders.findOne(query);
+
                 if (!check) {
-                    const result = await dbOrders.insertOne(productDetails)
-                    // console.log(result)
-                    res.send(productDetails)
+                    const newProductDetails = {
+                        ...productDetails,
+                        postedAt: new Date() 
+                    };
+
+                    const result = await dbOrders.insertOne(newProductDetails);
+                    res.send(newProductDetails);
                 } else {
-                    console.log({ message: "Already Exist" })
-                    res.send({ message: "Already Exist" })
+                    console.log({ message: "Already Exist" });
+                    res.send({ message: "Already Exist" });
                 }
             }
+
+
+
         })
 
         // MANAGER DASHBOARD STATS:
@@ -220,6 +252,7 @@ async function run() {
             console.log(email, limit)
             const query = { sellerEmail: email, status: "pending" }
             const AllProducts = await dbOrders.find(query).limit(Number(limit)).toArray()
+            console.log(AllProducts)
             res.send(AllProducts)
         })
 
