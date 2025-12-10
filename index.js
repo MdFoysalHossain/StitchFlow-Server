@@ -158,58 +158,61 @@ async function run() {
             const paymentInfo = req.body;
             const { total, title } = paymentInfo;
 
+            const query = { checkPrevOrder: paymentInfo.checkPrevOrder };
+            const check = await dbOrders.findOne(query);
+
             const priceCent = total * 100;
             console.log(priceCent, title);
 
-            const session = await stripe.checkout.sessions.create({
-                line_items: [
-                    {
-                        price_data: {
-                            currency: "USD",
-                            unit_amount: priceCent,
-                            product_data: {
-                                name: title,
-                            }
+            if (paymentInfo.paymentStatus === "Cash On Delivery") {
+                console.log("Cash On Delivery")
+                if (!check) {
+                    const newProductDetails = {
+                        ...paymentInfo,
+                        postedAt: new Date()
+                    };
+
+                    const result = await dbOrders.insertOne(newProductDetails);
+                    res.send(newProductDetails);
+                    return
+                } else {
+                    console.log({ message: "Already Exist" });
+                    res.send({ message: "Already Exist" });
+                }
+            }
+
+            if (paymentInfo.paymentStatus !== "Cash On Delivery") {
+                const session = await stripe.checkout.sessions.create({
+                    line_items: [
+                        {
+                            price_data: {
+                                currency: "USD",
+                                unit_amount: priceCent,
+                                product_data: {
+                                    name: title,
+                                }
+                            },
+                            quantity: 1,
                         },
-                        quantity: 1,
+                    ],
+
+                    mode: 'payment',
+                    metadata: {
+                        paymentInfo: JSON.stringify(paymentInfo)
                     },
-                ],
 
-                mode: 'payment',
-                metadata: {
-                    paymentInfo: JSON.stringify(paymentInfo)
-                },
+                    success_url: `${process.env.SITE_Domain}/Payment/Payment-successful?session_id={CHECKOUT_SESSION_ID}`,
+                    cancel_url: `${process.env.SITE_Domain}/Payment/Payment-canceled`,
+                });
 
-                success_url: `${process.env.SITE_Domain}/Payment/Payment-successful?session_id={CHECKOUT_SESSION_ID}`,
-                cancel_url: `${process.env.SITE_Domain}/Payment/Payment-canceled`,
-            });
-
-            console.log(session);
-            res.send({ url: session.url });
+                console.log(session);
+                res.send({ url: session.url });
+            }
         });
 
 
         // ON SUCCESSFULL ONLINE PAYMENT 
         app.post("/payment-success", async (req, res) => {
-            // const sessionId = req.query.session_id;
-
-            // const session = await stripe.checkout.sessions.retrieve(sessionId)
-
-            // const productDetails = JSON.parse(session.metadata.paymentInfo);
-            // const query = { checkPrevOrder: productDetails.checkPrevOrder }
-
-            // if (session.payment_status === "paid") {
-            //     const check = await dbOrders.findOne(query)
-            //     if (!check) {
-            //         const result = await dbOrders.insertOne(productDetails)
-            //         // console.log(result)
-            //         res.send(productDetails)
-            //     } else {
-            //         console.log({ message: "Already Exist" })
-            //         res.send({ message: "Already Exist" })
-            //     }
-            // }
-
             const sessionId = req.query.session_id;
             const session = await stripe.checkout.sessions.retrieve(sessionId);
             const productDetails = JSON.parse(session.metadata.paymentInfo);
@@ -221,7 +224,7 @@ async function run() {
                 if (!check) {
                     const newProductDetails = {
                         ...productDetails,
-                        postedAt: new Date() 
+                        postedAt: new Date()
                     };
 
                     const result = await dbOrders.insertOne(newProductDetails);
