@@ -12,7 +12,6 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_Admin}:${process.env.DB_Password}@codeearnestcluster.vnisplg.mongodb.net/?appName=CodeEarnestCluster`;
 const stripe = require('stripe')(process.env.STRIPE_Key);
 
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
     serverApi: {
         version: ServerApiVersion.v1,
@@ -266,6 +265,60 @@ async function run() {
             const query = { sellerEmail: email, status: "confirmed" }
             const AllProducts = await dbOrders.find(query).limit(Number(limit)).toArray()
             res.send(AllProducts)
+        })
+
+
+
+        // ACCEPT AND REJECT ORDERS
+        app.patch("/ProductOrderApprove/:id", async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+
+            const updateDoc = {
+                $set: {
+                    status: "confirmed",
+                    approvedTime: new Date(),
+                    stage: "Preparing"
+                }
+            };
+            const result = await dbOrders.updateOne(filter, updateDoc);
+            console.log("Approved")
+            res.send(result);
+        })
+
+        app.patch("/ProductOrderReject/:id", async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+
+            const updateDoc = {
+                $set: {
+                    status: "rejected",
+                    rejectedTime: new Date(),
+                    stage: "rejected"
+                }
+            };
+            const result = await dbOrders.updateOne(filter, updateDoc);
+            console.log("rejected")
+            res.send(result);
+        })
+
+
+        // MANAGER UPDATE APPROVED PRODUCT STATUS
+        app.patch("/ManagerUpdateApprovedProduct/:id", async(req, res) => {
+            const data = req.body;
+            const id = req.params.id;
+            const query = {_id: new ObjectId(id)}
+            const updateDoc = {
+                $set: {
+                    ...data[0]
+                }
+            };
+            
+            const result = await dbOrders.updateOne(query, updateDoc);
+            console.log(updateDoc)
+            res.send(result)
+
+
         })
 
     } finally {
