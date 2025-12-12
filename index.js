@@ -317,8 +317,51 @@ async function run() {
             const result = await dbOrders.updateOne(query, updateDoc);
             console.log(updateDoc)
             res.send(result)
+        })
 
 
+        app.get("/MyOrders", async (req, res) => {
+            const email = req.query.email
+            const limit = req.query.limit
+            const query = { email: email }
+            console.log(email, limit)
+            const AllProducts = await dbOrders.find(query).sort({ createdAt: -1 }).limit(Number(limit)).toArray()
+            res.send(AllProducts)
+        })
+
+        app.delete("/DeleteMyOrder/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const post = await dbOrders.deleteOne(query)
+            res.send(post)
+        })
+
+        app.get("/GetSingleOrder/:id", async(req, res) => {
+            const id = req.params.id;
+            const query = {_id: new ObjectId(id)}
+            const result = await dbOrders.findOne(query)
+            res.send(result)
+        })
+
+
+
+
+
+
+
+        // ADMIN PRODUCTS, USERS, ORDERS GET
+        app.get("/AdminAllProducts", async(req, res) => {
+            const getAll = await dbAllPost.find().sort({createdAt: -1}).toArray()
+            res.send(getAll)
+        })
+
+        app.get("/AdminAllUsers", async(req, res) => {
+            const getAll = await dbUsers.find().sort({registrationTime: -1}).toArray()
+            res.send(getAll)
+        })
+        app.get("/AdminAllOrders", async(req, res) => {
+            const getAll = await dbOrders.find().sort({postedAt: -1}).toArray()
+            res.send(getAll)
         })
 
     } finally {
