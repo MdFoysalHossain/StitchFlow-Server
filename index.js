@@ -304,16 +304,16 @@ async function run() {
 
 
         // MANAGER UPDATE APPROVED PRODUCT STATUS
-        app.patch("/ManagerUpdateApprovedProduct/:id", async(req, res) => {
+        app.patch("/ManagerUpdateApprovedProduct/:id", async (req, res) => {
             const data = req.body;
             const id = req.params.id;
-            const query = {_id: new ObjectId(id)}
+            const query = { _id: new ObjectId(id) }
             const updateDoc = {
                 $set: {
                     ...data[0]
                 }
             };
-            
+
             const result = await dbOrders.updateOne(query, updateDoc);
             console.log(updateDoc)
             res.send(result)
@@ -336,33 +336,51 @@ async function run() {
             res.send(post)
         })
 
-        app.get("/GetSingleOrder/:id", async(req, res) => {
+        app.get("/GetSingleOrder/:id", async (req, res) => {
             const id = req.params.id;
-            const query = {_id: new ObjectId(id)}
+            const query = { _id: new ObjectId(id) }
             const result = await dbOrders.findOne(query)
             res.send(result)
         })
 
 
-
-
-
-
-
         // ADMIN PRODUCTS, USERS, ORDERS GET
-        app.get("/AdminAllProducts", async(req, res) => {
-            const getAll = await dbAllPost.find().sort({createdAt: -1}).toArray()
+        app.get("/AdminAllProducts", async (req, res) => {
+            const getAll = await dbAllPost.find().sort({ createdAt: -1 }).toArray()
             res.send(getAll)
         })
 
-        app.get("/AdminAllUsers", async(req, res) => {
-            const getAll = await dbUsers.find().sort({registrationTime: -1}).toArray()
+        app.get("/AdminAllUsers", async (req, res) => {
+            const getAll = await dbUsers.find().sort({ registrationTime: -1 }).toArray()
             res.send(getAll)
         })
-        app.get("/AdminAllOrders", async(req, res) => {
-            const getAll = await dbOrders.find().sort({postedAt: -1}).toArray()
+        app.get("/AdminAllOrders", async (req, res) => {
+            const getAll = await dbOrders.find().sort({ postedAt: -1 }).toArray()
             res.send(getAll)
         })
+
+
+
+        // PATCH ShowHome
+        app.patch("/AdminShowHomeChange", async (req, res) => {
+                const { id, showHome } = req.body;
+
+                if (!id) {
+                    return res.status(400).send({ message: "Product ID is required" });
+                }
+
+                const query = { _id: new ObjectId(id) };
+                const update = {
+                    $set: {
+                        showHome: showHome
+                    }
+                };
+
+                const result = await dbAllPost.updateOne(query, update);
+                res.send(result);
+            }
+        );
+
 
     } finally {
         // Ensures that the client will close when you finish/error
