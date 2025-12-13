@@ -363,23 +363,53 @@ async function run() {
 
         // PATCH ShowHome
         app.patch("/AdminShowHomeChange", async (req, res) => {
-                const { id, showHome } = req.body;
+            const { id, showHome } = req.body;
 
-                if (!id) {
-                    return res.status(400).send({ message: "Product ID is required" });
-                }
-
-                const query = { _id: new ObjectId(id) };
-                const update = {
-                    $set: {
-                        showHome: showHome
-                    }
-                };
-
-                const result = await dbAllPost.updateOne(query, update);
-                res.send(result);
+            if (!id) {
+                return res.status(400).send({ message: "Product ID is required" });
             }
+
+            const query = { _id: new ObjectId(id) };
+            const update = {
+                $set: {
+                    showHome: showHome
+                }
+            };
+
+            const result = await dbAllPost.updateOne(query, update);
+            res.send(result);
+        }
         );
+
+
+        app.patch("/AdminAccountStatusChange/:id", async (req, res) => {
+            const { id } = req.params;
+            const { status, suspendedReason, suspendedFeedback } = req.body;
+
+            if (!id || !status) {
+                return res.status(400).send({
+                    success: false,
+                    message: "User ID and status are required"
+                });
+            }
+
+            const query = { _id: new ObjectId(id) };
+
+            const updateDoc = {
+                $set: {
+                    status: status,
+                    suspendedReason: suspendedReason || "",
+                    suspendedFeedback: suspendedFeedback || "",
+                    updatedAt: new Date()
+                }
+            };
+
+            const result = await dbUsers.updateOne(query, updateDoc);
+
+            res.send(result);
+
+        });
+
 
 
     } finally {
