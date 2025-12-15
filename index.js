@@ -7,10 +7,44 @@ const port = process.env.PORT || 3000;
 app.use(cors())
 app.use(express.json())
 
+const admin = require("firebase-admin");
+
+const serviceAccount = require("./stitchflow-firebase-adminsdk.json");
+
+admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount)
+});
+
+
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_Admin}:${process.env.DB_Password}@codeearnestcluster.vnisplg.mongodb.net/?appName=CodeEarnestCluster`;
 const stripe = require('stripe')(process.env.STRIPE_Key);
+
+const validateFirebaseToken = async (req, res, next) => {
+
+    if (!req.headers.authorization) {
+        console.log("No Authorizarion")
+        return res.status(401).send({ message: "Unauthorized Access" })
+    }
+    const token = req.headers.authorization.split(" ")[1]
+
+    if (!token) {
+        return res.status(401).send({ message: "Unauthorized Access" })
+    }
+
+    try {
+        const userInfo = await admin.auth().verifyIdToken(token)
+        req.userInfo = userInfo;
+        next()
+
+    }
+    catch {
+        return res.status(401).send({ message: "Unauthorized Access" })
+    }
+
+}
+
 
 const client = new MongoClient(uri, {
     serverApi: {
@@ -74,8 +108,9 @@ async function run() {
 
 
         // CREATE POST SYSTEM ONLY Managers can upload 
-        app.post("/CreatePost", async (req, res) => {
+        app.post("/CreatePost", validateFirebaseToken, async (req, res) => {
             const postData = req.body;
+            console.log("Use Information Ceatepsot:", req.userInfo)
             const postInfo = {
                 category: postData.category,
                 perPrice: postData.perPrice,
@@ -94,6 +129,8 @@ async function run() {
             }
             const post = await dbAllPost.insertOne(postInfo)
             res.send(post)
+
+            console.log(token)
         })
 
         app.delete("/DeletePost/:id", async (req, res) => {
@@ -362,7 +399,7 @@ async function run() {
                 const getAll = await dbOrders.find().sort({ postedAt: -1 }).toArray()
                 res.send(getAll)
             } else {
-                const filteredAll = await dbOrders.find({status: filterBy}).sort({ postedAt: -1 }).toArray()
+                const filteredAll = await dbOrders.find({ status: filterBy }).sort({ postedAt: -1 }).toArray()
                 res.send(filteredAll)
             }
 
