@@ -9,7 +9,7 @@ app.use(express.json())
 
 const admin = require("firebase-admin");
 
-const serviceAccount = require("./stitchflow-firebase-adminsdk.json");
+// const serviceAccount = require("./stitchflow-firebase-adminsdk.json");
 const serverAccountInf = {
     "type": process.env.FIREBASE_type,
     "project_id": process.env.FIREBASE_project_id,
@@ -78,7 +78,7 @@ async function run() {
     const dbOrders = myDB.collection("ProductOrders");
 
     try {
-        await client.connect();
+        // await client.connect();
         // await client.db("admin").command({ ping: 1 });
         // console.log("Pinged your deployment. You successfully connected to MongoDB!");
 
@@ -225,25 +225,6 @@ async function run() {
                 res.send({ products: allData, total: count })
             }
         })
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
