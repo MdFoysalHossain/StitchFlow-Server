@@ -69,6 +69,35 @@ async function run() {
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
 
+        const adminValidation = async (req, res, next) => {
+
+            if (!req.headers.authorization) {
+                console.log("No Authorizarion")
+                return res.status(401).send({ message: "Unauthorized Access" })
+            }
+            const token = req.headers.authorization.split(" ")[1]
+
+            if (!token) {
+                return res.status(401).send({ message: "Unauthorized Access" })
+            }
+
+            try {
+                const userInfo = await admin.auth().verifyIdToken(token)
+                const query = { email: userInfo.email }
+                const check = await dbUsers.findOne(query)
+                // console.log("Admin:", check)
+                if (check.accountType === "Admin") {
+                    next()
+                }else{
+                    return res.status(401).send({ message: "Unauthorized Access" })
+                }
+            }
+            catch {
+                return res.status(401).send({ message: "Unauthorized Access" })
+            }
+
+        }
+
 
 
         // CREATE USER ACCOUNT AND HANDLE LOGIN CREATION
@@ -307,7 +336,7 @@ async function run() {
         app.patch("/ProductOrderApprove/:id", validateFirebaseToken, async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) };
-            
+
             const check = await dbOrders.findOne(filter)
             console.log(check)
 
@@ -351,7 +380,7 @@ async function run() {
 
 
         // MANAGER UPDATE APPROVED PRODUCT STATUS
-        app.patch("/ManagerUpdateApprovedProduct/:id", async (req, res) => {
+        app.patch("/ManagerUpdateApprovedProduct/:id", validateFirebaseToken, async (req, res) => {
             const data = req.body;
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
@@ -367,7 +396,7 @@ async function run() {
         })
 
 
-        app.get("/MyOrders", async (req, res) => {
+        app.get("/MyOrders", validateFirebaseToken, async (req, res) => {
             const email = req.query.email
             const limit = req.query.limit
             const query = { email: email }
@@ -376,14 +405,14 @@ async function run() {
             res.send(AllProducts)
         })
 
-        app.delete("/DeleteMyOrder/:id", async (req, res) => {
+        app.delete("/DeleteMyOrder/:id", validateFirebaseToken, async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
             const post = await dbOrders.deleteOne(query)
             res.send(post)
         })
 
-        app.get("/GetSingleOrder/:id", async (req, res) => {
+        app.get("/GetSingleOrder/:id", validateFirebaseToken, async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
             const result = await dbOrders.findOne(query)
@@ -392,16 +421,16 @@ async function run() {
 
 
         // ADMIN PRODUCTS, USERS, ORDERS GET
-        app.get("/AdminAllProducts", async (req, res) => {
+        app.get("/AdminAllProducts", adminValidation, async (req, res) => {
             const getAll = await dbAllPost.find().sort({ createdAt: -1 }).toArray()
             res.send(getAll)
         })
 
-        app.get("/AdminAllUsers", async (req, res) => {
+        app.get("/AdminAllUsers", adminValidation, async (req, res) => {
             const getAll = await dbUsers.find().sort({ registrationTime: -1 }).toArray()
             res.send(getAll)
         })
-        app.get("/AdminAllOrders", async (req, res) => {
+        app.get("/AdminAllOrders", adminValidation, async (req, res) => {
             const filterBy = req.query.filter;
 
             console.log("FilteredBy:", filterBy)
@@ -418,7 +447,7 @@ async function run() {
 
 
         // PATCH ShowHome
-        app.patch("/AdminShowHomeChange", async (req, res) => {
+        app.patch("/AdminShowHomeChange", adminValidation, async (req, res) => {
             const { id, showHome } = req.body;
 
             if (!id) {
@@ -438,7 +467,7 @@ async function run() {
         );
 
 
-        app.patch("/AdminAccountStatusChange/:id", async (req, res) => {
+        app.patch("/AdminAccountStatusChange/:id", adminValidation, async (req, res) => {
             const { id } = req.params;
             const { status, suspendedReason, suspendedFeedback } = req.body;
 
@@ -469,7 +498,6 @@ async function run() {
 
 
     } finally {
-        // Ensures that the client will close when you finish/error
         // await client.close();
     }
 }
