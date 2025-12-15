@@ -88,7 +88,7 @@ async function run() {
                 // console.log("Admin:", check)
                 if (check.accountType === "Admin") {
                     next()
-                }else{
+                } else {
                     return res.status(401).send({ message: "Unauthorized Access" })
                 }
             }
@@ -200,9 +200,39 @@ async function run() {
 
         // Load All Products
         app.get("/AllProducts", async (req, res) => {
-            const allData = await dbAllPost.find().toArray()
-            res.send(allData)
+            const { limit, skip, isHome } = req.query;
+            console.log("Limit:", limit, isHome, skip)
+            const count = await dbAllPost.countDocuments()
+
+            if (isHome === "true") {
+                const allData = await dbAllPost.find({ showHome: true }).limit(Number(limit)).skip(Number(skip)).toArray()
+                res.send({ products: allData, total: count })
+            } else {
+                const allData = await dbAllPost.find().limit(Number(limit)).skip(Number(skip)).toArray()
+                res.send({ products: allData, total: count })
+            }
         })
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         app.get("/SingleProduct/:id", async (req, res) => {
             const params = req.params.id;
