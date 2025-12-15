@@ -355,8 +355,17 @@ async function run() {
             res.send(getAll)
         })
         app.get("/AdminAllOrders", async (req, res) => {
-            const getAll = await dbOrders.find().sort({ postedAt: -1 }).toArray()
-            res.send(getAll)
+            const filterBy = req.query.filter;
+
+            console.log("FilteredBy:", filterBy)
+            if (filterBy === undefined || filterBy === "all") {
+                const getAll = await dbOrders.find().sort({ postedAt: -1 }).toArray()
+                res.send(getAll)
+            } else {
+                const filteredAll = await dbOrders.find({status: filterBy}).sort({ postedAt: -1 }).toArray()
+                res.send(filteredAll)
+            }
+
         })
 
 
