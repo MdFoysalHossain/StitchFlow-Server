@@ -133,7 +133,7 @@ async function run() {
             console.log(token)
         })
 
-        app.delete("/DeletePost/:id", async (req, res) => {
+        app.delete("/DeletePost/:id", validateFirebaseToken, async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
             const post = await dbAllPost.deleteOne(query)
@@ -142,7 +142,7 @@ async function run() {
 
 
         // UPDATE POST
-        app.patch("/UpdatePost", async (req, res) => {
+        app.patch("/UpdatePost", validateFirebaseToken, async (req, res) => {
             const postData = req.body;
             const query = { _id: new ObjectId(postData.id) };
 
@@ -182,9 +182,6 @@ async function run() {
             console.log(getData)
             res.send(getData)
         })
-
-
-
 
 
 
@@ -276,7 +273,7 @@ async function run() {
         })
 
         // MANAGER DASHBOARD STATS:
-        app.get("/GetProductsStats", async (req, res) => {
+        app.get("/GetProductsStats", validateFirebaseToken, async (req, res) => {
             const email = req.query.email
             const limit = req.query.limit
             console.log(email, limit)
@@ -285,7 +282,7 @@ async function run() {
             res.send(AllProducts)
         })
 
-        app.get("/GetPendingStats", async (req, res) => {
+        app.get("/GetPendingStats", validateFirebaseToken, async (req, res) => {
             const email = req.query.email
             const limit = req.query.limit
             console.log(email, limit)
@@ -295,7 +292,7 @@ async function run() {
             res.send(AllProducts)
         })
 
-        app.get("/GetApprovedStats", async (req, res) => {
+        app.get("/GetApprovedStats", validateFirebaseToken, async (req, res) => {
             const email = req.query.email
             const limit = req.query.limit
             console.log(email, limit)
@@ -307,36 +304,49 @@ async function run() {
 
 
         // ACCEPT AND REJECT ORDERS
-        app.patch("/ProductOrderApprove/:id", async (req, res) => {
+        app.patch("/ProductOrderApprove/:id", validateFirebaseToken, async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) };
+            
+            const check = await dbOrders.findOne(filter)
+            console.log(check)
 
-            const updateDoc = {
-                $set: {
-                    status: "confirmed",
-                    approvedTime: new Date(),
-                    stage: "Preparing"
-                }
-            };
-            const result = await dbOrders.updateOne(filter, updateDoc);
-            console.log("Approved")
-            res.send(result);
+            if (check.sellerEmail === req.userInfo.email) {
+                const updateDoc = {
+                    $set: {
+                        status: "confirmed",
+                        approvedTime: new Date(),
+                        stage: "Preparing"
+                    }
+                };
+                const result = await dbOrders.updateOne(filter, updateDoc);
+                console.log("Approved")
+                res.send(result);
+            }
         })
 
-        app.patch("/ProductOrderReject/:id", async (req, res) => {
+
+        app.patch("/ProductOrderReject/:id", validateFirebaseToken, async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) };
 
-            const updateDoc = {
-                $set: {
-                    status: "rejected",
-                    rejectedTime: new Date(),
-                    stage: "rejected"
-                }
-            };
-            const result = await dbOrders.updateOne(filter, updateDoc);
-            console.log("rejected")
-            res.send(result);
+            const check = await dbOrders.findOne(filter)
+            console.log(check)
+
+            if (check.sellerEmail === req.userInfo.email) {
+                // console.log("Match")
+                const updateDoc = {
+                    $set: {
+                        status: "rejected",
+                        rejectedTime: new Date(),
+                        stage: "rejected"
+                    }
+                };
+                const result = await dbOrders.updateOne(filter, updateDoc);
+                console.log("rejected")
+                res.send(result);
+            }
+
         })
 
 
